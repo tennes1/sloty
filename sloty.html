@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darmowe Sloty i Blackjack - Kliker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
+        .slot-machine, .blackjack {
+            display: inline-block;
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin-bottom: 40px;
+        }
+        .reel {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            margin: 0 10px;
+            background-color: #1abc9c;
+            font-size: 32px;
+            line-height: 100px;
+            border-radius: 10px;
+        }
+        .reel span {
+            display: block;
+        }
+        .spin-button, .blackjack-button, .toggle-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .spin-button:hover, .blackjack-button:hover, .toggle-button:hover {
+            background-color: #c0392b;
+        }
+        .result, .blackjack-result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .balance {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .multiplier {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .multiplier button {
+            padding: 10px;
+            margin: 5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .multiplier button:hover {
+            background-color: #2980b9;
+        }
+        .blackjack {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Darmowe Sloty i Blackjack</h1>
+    <div class="balance">
+        Saldo: <span id="balance">100</span> monet
+    </div>
+
+    <!-- Wybór mnożnika -->
+    <div class="multiplier">
+        <button onclick="setMultiplier(1)">Mniejszy Mnożnik (x1)</button>
+        <button onclick="setMultiplier(2)">Większy Mnożnik (x2)</button>
+        <button onclick="setMultiplier(3)">Największy Mnożnik (x3)</button>
+        <button onclick="setMultiplier(0.5)">Najmniejszy Mnożnik (x0.5)</button>
+    </div>
+
+    <!-- Slot Machine Section -->
+    <div class="slot-machine" id="slot-machine">
+        <div class="reel" id="reel1">
+            <span>🍒</span>
+        </div>
+        <div class="reel" id="reel2">
+            <span>🍒</span>
+        </div>
+        <div class="reel" id="reel3">
+            <span>🍒</span>
+        </div>
+        <button class="spin-button" onclick="spin()">Kręć!</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <!-- Blackjack Section -->
+    <div class="blackjack" id="blackjack">
+        <div class="blackjack-cards">
+            <p>Twoje karty: <span id="player-cards"></span></p>
+            <p>Karty dealera: <span id="dealer-cards"></span></p>
+            <p>Wartość: <span id="player-value"></span></p>
+        </div>
+        <button class="blackjack-button" onclick="hit()">Dobierz kartę</button>
+        <button class="blackjack-button" onclick="stand()">Zatrzymaj się</button>
+        <div class="blackjack-result" id="blackjack-result"></div>
+    </div>
+
+    <button class="toggle-button" onclick="toggleGame()">Zmień na Blackjacka</button>
+
+    <script>
+        const symbols = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍓'];
+        let balance = 1000;  // Początkowe saldo
+        let currentMultiplier = 1;  // Domyślny mnożnik x1
+        const jackpot = 10000;  // Jackpot (3 symbole 🎉)
+        const baseSpinCost = 10;  // Koszt spinowania bez mnożników
+
+        // Blackjack variables
+        const cardValues = { '🍒': 10, '🍋': 9, '🍊': 8, '🍇': 7, '🍉': 6, '🍓': 5, '🥝': 4, '🥥': 3, '🍍': 2 };
+        let playerCards = [];
+        let dealerCards = [];
+        let playerTotal = 0;
+        let dealerTotal = 0;
+        let blackjackInProgress = false;
+
+        // Slot Machine Functions
+        function getRandomSymbol() {
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+
+        function countCherries(symbols) {
+            return symbols.filter(symbol => symbol === '🍒').length;
+        }
+
+        function setMultiplier(multiplier) {
+            if (multiplier === 0.5 && balance < 5) {
+                alert("Aby wybrać mnożnik 0.5, musisz mieć przynajmniej 5 monet!");
+                return;
+            }
+            currentMultiplier = multiplier;
+            document.getElementById('result').innerText = `Wybrany mnożnik: x${multiplier}`;
+        }
+
+        function spin() {
+            const spinCost = baseSpinCost * currentMultiplier;
+            if (balance < spinCost) {
+                alert("Masz za mało monet! Zarób więcej!");
+                return;
+            }
+            balance -= spinCost;
+            document.getElementById('balance').innerText = balance;
+            const reel1 = getRandomSymbol();
+            const reel2 = getRandomSymbol();
+            const reel3 = getRandomSymbol();
+            document.getElementById('reel1').innerHTML = `<span>${reel1}</span>`;
+            document.getElementById('reel2').innerHTML = `<span>${reel2}</span>`;
+            document.getElementById('reel3').innerHTML = `<span>${reel3}</span>`;
+            const cherries = countCherries([reel1, reel2, reel3]);
+            let win = 0;
+            if (cherries === 1) {
+                win = 5 * currentMultiplier;
+                document.getElementById('result').innerHTML = `1 Wisnia - ${10 * currentMultiplier} monet!`;
+            } else if (cherries === 2) {
+                win = 10 * currentMultiplier;
+                document.getElementById('result').innerHTML = `2 Wisnie - ${20 * currentMultiplier} monet!`;
+            } else if (cherries === 3) {
+                win = 100 * currentMultiplier;
+                document.getElementById('result').innerHTML = `3 Wisnie - ${100 * currentMultiplier} monet!`;
+            } else {
+                document.getElementById('result').innerHTML = 'Spróbuj ponownie! 😞';
+            }
+            balance += win;
+            document.getElementById('balance').innerText = balance;
+        }
+
+        // Blackjack Functions
+        function getCard() {
+            const cards = Object.keys(cardValues);
+            return cards[Math.floor(Math.random() * cards.length)];
+        }
+
+        function calculateTotal(cards) {
+            let total = 0;
+            cards.forEach(card => total += cardValues[card]);
+            return total;
+        }
+
+        function startBlackjack() {
+            blackjackInProgress = true;
+            playerCards = [getCard(), getCard()];
+            dealerCards = [getCard(), getCard()];
+            playerTotal = calculateTotal(playerCards);
+            dealerTotal = calculateTotal(dealerCards);
+            document.getElementById('player-cards').innerText = playerCards.join(' ');
+            document.getElementById('dealer-cards').innerText = dealerCards[0] + ' ?';
+            document.getElementById('player-value').innerText = playerTotal;
+            document.getElementById('blackjack-result').innerText = '';
+        }
+
+        function hit() {
+            if (!blackjackInProgress) return;
+            const newCard = getCard();
+            playerCards.push(newCard);
+            playerTotal = calculateTotal(playerCards);
+            document.getElementById('player-cards').innerText = playerCards.join(' ');
+            document.getElementById('player-value').innerText = playerTotal;
+            if (playerTotal > 21) {
+                endBlackjack('Przegrałeś! Zbyt wysoka wartość kart.');
+            }
+        }
+
+        function stand() {
+            if (!blackjackInProgress) return;
+            while (dealerTotal < 17) {
+                dealerCards.push(getCard());
+                dealerTotal = calculateTotal(dealerCards);
+            }
+            document.getElementById('dealer-cards').innerText = dealerCards.join(' ');
+            document.getElementById('blackjack-result').innerText = `Wartość kart dealera: ${dealerTotal}`;
+            if (dealerTotal > 21 || playerTotal > dealerTotal) {
+                endBlackjack('Wygrałeś!');
+            } else if (dealerTotal > playerTotal) {
+                endBlackjack('Przegrałeś!');
+            } else {
+                endBlackjack('Remis!');
+            }
+        }
+
+        function endBlackjack(message) {
+            blackjackInProgress = false;
+            document.getElementById('blackjack-result').innerText = message;
+        }
+
+        // Toggle between Slot Machine and Blackjack
+        function toggleGame() {
+            const slotMachineSection = document.getElementById('slot-machine');
+            const blackjackSection = document.getElementById('blackjack');
+            const toggleButton = document.querySelector('.toggle-button');
+
+            if (slotMachineSection.style.display === 'none') {
+                slotMachineSection.style.display = 'inline-block';
+                blackjackSection.style.display = 'none';
+                toggleButton.innerText = 'Zmień na Blackjacka';
+            } else {
+                slotMachineSection.style.display = 'none';
+                blackjackSection.style.display = 'inline-block';
+                toggleButton.innerText = 'Zmień na Sloty';
+                startBlackjack();
+            }
+        }
+    </script>
+</body>
+</html>
